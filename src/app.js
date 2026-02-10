@@ -6,6 +6,7 @@ import { createSeed, pickPuzzleBySeed } from "./puzzles/random-generator.js";
 import { loadSessionById, loadSessions, saveSession } from "./storage/repositories.js";
 
 const HINTS_VISIBILITY_KEY = "spelling-bee:hints-visible";
+const LETTER_KEY_PATTERN = /^[a-z]$/i;
 
 const elements = {
   board: document.getElementById("letter-board"),
@@ -24,6 +25,7 @@ const elements = {
   toggleHintsButton: document.getElementById("toggle-hints"),
   sessions: document.getElementById("sessions"),
   newRandomButton: document.getElementById("new-random-game"),
+  shuffleLettersButton: document.getElementById("shuffle-letters"),
   seedForm: document.getElementById("seed-form"),
   seedInput: document.getElementById("seed-input")
 };
@@ -32,8 +34,50 @@ const runtime = {
   puzzles: [],
   activeState: null,
   sessionsCache: [],
-  hintsVisible: true
+  hintsVisible: true,
+  boardOuterLetters: null,
+  boardPuzzleId: null
 };
+
+function shuffledOuterLetters(outerLetters) {
+  const shuffled = [...outerLetters];
+  for (let idx = shuffled.length - 1; idx > 0; idx -= 1) {
+    const swapIdx = Math.floor(Math.random() * (idx + 1));
+    [shuffled[idx], shuffled[swapIdx]] = [shuffled[swapIdx], shuffled[idx]];
+  }
+  return shuffled;
+}
+
+function syncBoardLetters(state) {
+  if (
+    runtime.boardPuzzleId !== state.puzzle.id ||
+    !runtime.boardOuterLetters ||
+    runtime.boardOuterLetters.length !== state.puzzle.outerLetters.length
+  ) {
+    runtime.boardOuterLetters = [...state.puzzle.outerLetters];
+    runtime.boardPuzzleId = state.puzzle.id;
+  }
+}
+
+function isTextEditingTarget(target) {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
+}
+
+function shouldCaptureGlobalTyping(event) {
+  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+    return false;
+  }
+
+  if (event.target === elements.wordInput) {
+    return false;
+  }
+
+  return !isTextEditingTarget(event.target);
+}
 
 function renderHintsVisibility() {
   elements.hintsContent.hidden = !runtime.hintsVisible;
@@ -42,7 +86,8 @@ function renderHintsVisibility() {
 }
 
 function render(state) {
-  elements.board.setLetters(state.puzzle.centerLetter, state.puzzle.outerLetters);
+  syncBoardLetters(state);
+  elements.board.setLetters(state.puzzle.centerLetter, runtime.boardOuterLetters);
   elements.score.textContent = String(state.score);
   elements.rank.textContent = toRankLabel(state.rankKey);
   elements.foundCount.textContent = String(state.foundWords.length);
@@ -111,6 +156,8 @@ async function persistAndRefreshSession(state) {
 
 async function activateState(state) {
   runtime.activeState = state;
+  runtime.boardOuterLetters = [...state.puzzle.outerLetters];
+  runtime.boardPuzzleId = state.puzzle.id;
   render(runtime.activeState);
   await persistAndRefreshSession(runtime.activeState);
 }
@@ -181,6 +228,15 @@ elements.newRandomButton.addEventListener("click", async () => {
   await startRandomSession();
 });
 
+elements.shuffleLettersButton.addEventListener("click", () => {
+  if (!runtime.activeState || !runtime.boardOuterLetters) {
+    return;
+  }
+
+  runtime.boardOuterLetters = shuffledOuterLetters(runtime.boardOuterLetters);
+  elements.board.setLetters(runtime.activeState.puzzle.centerLetter, runtime.boardOuterLetters);
+});
+
 elements.seedForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -224,6 +280,29 @@ elements.sessions.addEventListener("click", async (event) => {
 
   runtime.activeState = hydrated;
   render(runtime.activeState);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!runtime.activeState || !shouldCaptureGlobalTyping(event)) {
+    return;
+  }
+
+  if (LETTER_KEY_PATTERN.test(event.key)) {
+    event.preventDefault();
+    elements.wordInput.value += event.key.toLowerCase();
+    return;
+  }
+
+  if (event.key === "Backspace") {
+    event.preventDefault();
+    elements.wordInput.value = elements.wordInput.value.slice(0, -1);
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    elements.wordForm.requestSubmit();
+  }
 });
 
 boot().catch((error) => {

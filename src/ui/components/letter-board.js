@@ -18,18 +18,18 @@ template.innerHTML = `
     }
 
     .hex {
-      fill: #dddad4;
-      stroke: #090909;
+      fill: var(--board-hex, #dddad4);
+      stroke: var(--board-hex-stroke, #090909);
       stroke-width: 5;
       stroke-linejoin: round;
     }
 
     .hex.center {
-      fill: #f6dd2f;
+      fill: var(--accent, #f6b91a);
     }
 
     .letter {
-      fill: #111111;
+      fill: var(--board-letter, #111111);
       font-size: 44px;
       font-weight: 800;
       text-anchor: middle;

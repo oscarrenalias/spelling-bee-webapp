@@ -32,12 +32,14 @@
 
       <section class="game-layout">
         <div class="left-panel">
-          <letter-board id="letter-board"></letter-board>
-
-          <form id="word-form" class="word-form" autocomplete="off">
-            <input id="word-input" type="text" minlength="4" spellcheck="false" placeholder="Enter word" required />
-            <button type="submit">Submit</button>
-          </form>
+          <div class="board-stack">
+            <form id="word-form" class="word-form" autocomplete="off">
+              <input id="word-input" type="text" minlength="4" spellcheck="false" required />
+              <button type="submit">Submit</button>
+            </form>
+            <letter-board id="letter-board"></letter-board>
+            <button id="shuffle-letters" type="button" class="secondary-button board-action-button">Shuffle</button>
+          </div>
           <p id="feedback" aria-live="polite" class="feedback"></p>
           <p id="seed-display" class="seed-display"></p>
 
