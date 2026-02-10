@@ -164,11 +164,121 @@ button {
 }
 
 .status-panel {
-  display: flex;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem 1.1rem;
   margin-bottom: 1rem;
-  flex-wrap: wrap;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, #00111e 12%), var(--panel));
+}
+
+.status-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.score-chip,
+.rank-summary,
+.found-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.status-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.score-chip strong,
+.rank-summary strong,
+.found-summary strong {
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.rank-progress {
+  color: var(--muted);
+  font-size: 0.88rem;
+  min-height: 1.2em;
+}
+
+.rank-track {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.rank-stop {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rank-stop:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 2px);
+  right: calc(-50% - 2px);
+  top: calc(50% - 1px);
+  height: 2px;
+  background: color-mix(in srgb, var(--line) 40%, var(--ink) 20%);
+}
+
+.rank-stop.is-past:not(:last-child)::after,
+.rank-stop.is-current:not(:last-child)::after {
+  background: color-mix(in srgb, var(--accent) 70%, #e6c200 30%);
+  right: calc(-50% - 1px);
+}
+
+.rank-marker {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 72%, #7b7b7b 28%);
+  border: 1px solid color-mix(in srgb, var(--panel) 52%, #8a8a8a 48%);
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #201600;
+  position: relative;
+  z-index: 2;
+  transition: transform 140ms ease, width 180ms ease, height 180ms ease, background 180ms ease;
+}
+
+.rank-marker.is-reached {
+  background: color-mix(in srgb, var(--accent) 90%, #ffe06d 10%);
+  border-color: color-mix(in srgb, var(--accent-border) 85%, #6e5400 15%);
+}
+
+.rank-marker.is-current {
+  width: 3rem;
+  height: 3rem;
+  background: color-mix(in srgb, var(--accent) 88%, #ffe06a 12%);
+  border-color: color-mix(in srgb, var(--accent-border) 85%, #644b00 15%);
+  font-size: 1.5rem;
+  transform: translateY(-0.05rem);
+}
+
+.rank-current-label {
+  position: absolute;
+  bottom: calc(100% + 0.45rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .game-layout {
@@ -326,10 +436,37 @@ td {
   .game-layout {
     grid-template-columns: 1fr;
   }
+
+  .status-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rank-summary {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 560px) {
   .board-stack {
     max-width: 320px;
+  }
+
+  .status-panel {
+    padding-bottom: 0.9rem;
+  }
+
+  .rank-track {
+    gap: 0.35rem;
+    padding: 0;
+  }
+
+  .rank-marker.is-current {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.2rem;
+  }
+
+  .rank-current-label {
+    font-size: 0.84rem;
   }
 }

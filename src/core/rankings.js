@@ -1,4 +1,4 @@
-const RANK_ORDER = [
+export const RANK_ORDER = [
   "beginner",
   "goodStart",
   "movingUp",

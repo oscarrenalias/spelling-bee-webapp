@@ -1,6 +1,6 @@
 import "./ui/components/letter-board.js";
 import { createInitialState, submitWord } from "./core/game-engine.js";
-import { toRankLabel } from "./core/rankings.js";
+import { RANK_ORDER, toRankLabel } from "./core/rankings.js";
 import { getDailyPuzzle, loadPuzzles } from "./puzzles/provider.js";
 import { createSeed, pickPuzzleBySeed } from "./puzzles/random-generator.js";
 import { loadSessionById, loadSessions, saveSession } from "./storage/repositories.js";
@@ -21,6 +21,8 @@ const elements = {
   seedDisplay: document.getElementById("seed-display"),
   score: document.getElementById("score"),
   rank: document.getElementById("rank"),
+  rankProgress: document.getElementById("rank-progress"),
+  rankTrack: document.getElementById("rank-track"),
   foundCount: document.getElementById("found-count"),
   foundWords: document.getElementById("found-words"),
   remainingPoints: document.getElementById("remaining-points"),
@@ -43,6 +45,67 @@ const runtime = {
   boardOuterLetters: null,
   boardPuzzleId: null
 };
+
+function getOrderedRanks(rankThresholds) {
+  return RANK_ORDER.filter((rankKey) => typeof rankThresholds[rankKey] === "number").map((rankKey) => ({
+    rankKey,
+    label: toRankLabel(rankKey),
+    threshold: rankThresholds[rankKey]
+  }));
+}
+
+function renderRankTrack(state) {
+  const orderedRanks = getOrderedRanks(state.puzzle.rankThresholds);
+  const currentRankIndex = orderedRanks.findIndex((rank) => rank.rankKey === state.rankKey);
+  const nextRank = orderedRanks.find((rank) => rank.threshold > state.score);
+  const currentRank = orderedRanks[currentRankIndex] ?? orderedRanks[0];
+
+  elements.rank.textContent = toRankLabel(state.rankKey);
+
+  if (nextRank) {
+    const pointsToNext = nextRank.threshold - state.score;
+    elements.rankProgress.textContent = `${pointsToNext} points to ${nextRank.label}`;
+  } else {
+    elements.rankProgress.textContent = "Top rank reached";
+  }
+
+  elements.rankTrack.innerHTML = "";
+  for (const [index, rank] of orderedRanks.entries()) {
+    const item = document.createElement("li");
+    item.className = "rank-stop";
+
+    const marker = document.createElement("span");
+    marker.className = "rank-marker";
+
+    if (state.score >= rank.threshold) {
+      marker.classList.add("is-reached");
+    }
+
+    if (rank.rankKey === state.rankKey) {
+      marker.classList.add("is-current");
+      marker.textContent = String(state.score);
+    }
+
+    marker.title = `${rank.label} (${rank.threshold})`;
+    marker.setAttribute("aria-label", `${rank.label}, ${rank.threshold} points`);
+
+    if (index < currentRankIndex) {
+      item.classList.add("is-past");
+    } else if (index === currentRankIndex) {
+      item.classList.add("is-current");
+    }
+
+    if (currentRank && rank.rankKey === currentRank.rankKey) {
+      const label = document.createElement("span");
+      label.className = "rank-current-label";
+      label.textContent = currentRank.label;
+      item.append(label);
+    }
+
+    item.append(marker);
+    elements.rankTrack.append(item);
+  }
+}
 
 function renderInitLoading(message) {
   elements.initMessage.textContent = message;
@@ -117,7 +180,7 @@ function render(state) {
   syncBoardLetters(state);
   elements.board.setLetters(state.puzzle.centerLetter, runtime.boardOuterLetters);
   elements.score.textContent = String(state.score);
-  elements.rank.textContent = toRankLabel(state.rankKey);
+  renderRankTrack(state);
   elements.foundCount.textContent = String(state.foundWords.length);
   elements.feedback.textContent = state.feedback;
   elements.seedDisplay.textContent = state.source === "random" && state.seed ? `Seed: ${state.seed}` : "";

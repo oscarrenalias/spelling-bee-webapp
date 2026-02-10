@@ -37,9 +37,22 @@
       </header>
 
       <section class="status-panel">
-        <div><strong>Score:</strong> <span id="score">0</span></div>
-        <div><strong>Rank:</strong> <span id="rank">Beginner</span></div>
-        <div><strong>Words Found:</strong> <span id="found-count">0</span></div>
+        <div class="status-summary">
+          <div class="score-chip">
+            <span class="status-label">Score</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="rank-summary">
+            <span class="status-label">Rank</span>
+            <strong id="rank">Beginner</strong>
+            <span id="rank-progress" class="rank-progress"></span>
+          </div>
+          <div class="found-summary">
+            <span class="status-label">Words Found</span>
+            <strong id="found-count">0</strong>
+          </div>
+        </div>
+        <ol id="rank-track" class="rank-track" aria-label="Rank milestones"></ol>
       </section>
 
       <section class="game-layout">
