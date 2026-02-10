@@ -66,9 +66,10 @@ export function openDb({ repairAttempted = false } = {}) {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event) => {
       const db = request.result;
-      runMigrations(db, request.oldVersion);
+      const oldVersion = event.oldVersion ?? request.oldVersion ?? 0;
+      runMigrations(db, oldVersion);
     };
 
     request.onsuccess = () => {
