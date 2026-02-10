@@ -170,6 +170,8 @@ class FakeDatabaseConnection {
   transaction(storeName, _mode) {
     return new FakeTransaction(this.internalDb, storeName);
   }
+
+  close() {}
 }
 
 function createInternalDb(name, version) {
@@ -215,6 +217,17 @@ export function createFakeIndexedDb() {
 
         const connection = new FakeDatabaseConnection(internalDb);
         request.result = connection;
+        emitSuccess(request);
+      });
+
+      return request;
+    },
+
+    deleteDatabase(name) {
+      const request = createRequest();
+
+      queueMicrotask(() => {
+        dbs.delete(name);
         emitSuccess(request);
       });
 

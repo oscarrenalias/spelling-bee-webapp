@@ -142,3 +142,26 @@ test("IndexedDB upgrade to v2 preserves existing sessions and adds missing store
   assert.equal(legacySession.score, 1);
   assert.deepEqual(legacySession.foundWords, ["acre"]);
 });
+
+test("openDb repairs broken schema when required stores are missing", { concurrency: false }, async (t) => {
+  const fake = installFakeIndexedDb(t);
+
+  fake.seedDatabase(DB_NAME, 2, {
+    puzzles: {
+      keyPath: "id",
+      indexes: [],
+      records: []
+    },
+    app_meta: {
+      keyPath: "key",
+      indexes: [],
+      records: []
+    }
+  });
+
+  const db = await openDb();
+  assert.equal(db.version, 2);
+
+  const snapshot = fake.inspectDatabase(DB_NAME);
+  assert.deepEqual(snapshot.stores, ["app_meta", "puzzles", "sessions"]);
+});
