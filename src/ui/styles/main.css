@@ -50,6 +50,44 @@ body {
   background: var(--bg);
 }
 
+.app-init {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.app-init[hidden],
+.app-shell[hidden] {
+  display: none;
+}
+
+.app-init-card {
+  width: min(480px, 100%);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.app-init-card h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+}
+
+.app-init-card p {
+  margin: 0;
+}
+
+.init-error {
+  margin-top: 0.75rem;
+  color: #b53030;
+}
+
+#init-retry {
+  margin-top: 0.9rem;
+}
+
 .app-shell {
   max-width: 1080px;
   margin: 0 auto;

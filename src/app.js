@@ -9,6 +9,11 @@ const HINTS_VISIBILITY_KEY = "spelling-bee:hints-visible";
 const LETTER_KEY_PATTERN = /^[a-z]$/i;
 
 const elements = {
+  appShell: document.getElementById("app-shell"),
+  initScreen: document.getElementById("app-init"),
+  initMessage: document.getElementById("init-message"),
+  initError: document.getElementById("init-error"),
+  initRetry: document.getElementById("init-retry"),
   board: document.getElementById("letter-board"),
   wordForm: document.getElementById("word-form"),
   wordInput: document.getElementById("word-input"),
@@ -38,6 +43,29 @@ const runtime = {
   boardOuterLetters: null,
   boardPuzzleId: null
 };
+
+function renderInitLoading(message) {
+  elements.initMessage.textContent = message;
+  elements.initError.hidden = true;
+  elements.initError.textContent = "";
+  elements.initRetry.hidden = true;
+  elements.appShell.hidden = true;
+  elements.initScreen.hidden = false;
+}
+
+function renderInitError(message) {
+  elements.initMessage.textContent = "Could not start the game.";
+  elements.initError.textContent = message;
+  elements.initError.hidden = false;
+  elements.initRetry.hidden = false;
+  elements.appShell.hidden = true;
+  elements.initScreen.hidden = false;
+}
+
+function renderReady() {
+  elements.initScreen.hidden = true;
+  elements.appShell.hidden = false;
+}
 
 function shuffledOuterLetters(outerLetters) {
   const shuffled = [...outerLetters];
@@ -190,24 +218,31 @@ async function startRandomSession(seed = createSeed()) {
 }
 
 async function boot() {
+  renderInitLoading("Loading settings...");
   runtime.hintsVisible = localStorage.getItem(HINTS_VISIBILITY_KEY) !== "false";
   renderHintsVisibility();
 
+  renderInitLoading("Loading puzzle definitions...");
   runtime.puzzles = await loadPuzzles();
+  renderInitLoading("Loading saved sessions...");
   runtime.sessionsCache = await loadSessions();
 
   if (runtime.sessionsCache.length) {
+    renderInitLoading("Restoring your latest session...");
     const latest = [...runtime.sessionsCache].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
     const recovered = hydrateStateFromSession(latest);
     if (recovered) {
       runtime.activeState = recovered;
       render(runtime.activeState);
       renderSessionsList();
+      renderReady();
       return;
     }
   }
 
+  renderInitLoading("Preparing today's puzzle...");
   await startDailySession();
+  renderReady();
 }
 
 elements.wordForm.addEventListener("submit", async (event) => {
@@ -305,6 +340,12 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-boot().catch((error) => {
-  elements.feedback.textContent = `Initialization failed: ${error.message}`;
+elements.initRetry.addEventListener("click", () => {
+  void boot().catch((error) => {
+    renderInitError(error.message);
+  });
+});
+
+void boot().catch((error) => {
+  renderInitError(error.message);
 });

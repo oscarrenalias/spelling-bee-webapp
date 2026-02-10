@@ -7,7 +7,16 @@
     <link rel="stylesheet" href="./src/ui/styles/main.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <section id="app-init" class="app-init" role="status" aria-live="polite">
+      <div class="app-init-card">
+        <h1>Spelling Bee</h1>
+        <p id="init-message">Loading dictionary...</p>
+        <p id="init-error" class="init-error" hidden></p>
+        <button id="init-retry" type="button" hidden>Retry</button>
+      </div>
+    </section>
+
+    <main id="app-shell" class="app-shell" hidden>
       <header class="topbar">
         <div class="title-group">
           <h1>Spelling Bee</h1>
