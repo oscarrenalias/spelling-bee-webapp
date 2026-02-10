@@ -21,6 +21,7 @@
     "requireScore": false,
     "optional": true
   },
+  "includeCommonInflections": true,
   "minimumLength": 4,
   "excludeProfanity": true,
   "excludeGeoTerms": true,

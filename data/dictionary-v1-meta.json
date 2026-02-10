@@ -28,8 +28,9 @@
     "removedDemonyms": 4,
     "removedAbbreviations": 20498,
     "removedRare": 3,
+    "inflectionsAdded": 6190,
     "allowlistAdded": 0,
     "blocklistRemoved": 104,
-    "finalTotal": 13408
+    "finalTotal": 19598
   }
 }

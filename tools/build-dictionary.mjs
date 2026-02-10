@@ -34,6 +34,45 @@ function matchesBlockedPattern(word, patterns) {
   return patterns.some((pattern) => new RegExp(pattern, "u").test(word));
 }
 
+function isConsonant(char) {
+  return /^[bcdfghjklmnpqrstvwxyz]$/u.test(char);
+}
+
+function buildCommonInflectionCandidates(baseWord) {
+  const candidates = new Set();
+
+  if (!baseWord) {
+    return [];
+  }
+
+  const endsWithY = baseWord.endsWith("y");
+  const preY = endsWithY ? baseWord.at(-2) : "";
+  const consonantY = Boolean(preY) && isConsonant(preY);
+  const endsWithE = baseWord.endsWith("e");
+  const takesEs = /(s|x|z|ch|sh)$/u.test(baseWord);
+
+  candidates.add(`${baseWord}s`);
+  if (takesEs) {
+    candidates.add(`${baseWord}es`);
+  }
+  if (consonantY) {
+    candidates.add(`${baseWord.slice(0, -1)}ies`);
+  }
+
+  if (endsWithE) {
+    candidates.add(`${baseWord}d`);
+    candidates.add(`${baseWord.slice(0, -1)}ing`);
+  } else if (consonantY) {
+    candidates.add(`${baseWord.slice(0, -1)}ied`);
+    candidates.add(`${baseWord}ing`);
+  } else {
+    candidates.add(`${baseWord}ed`);
+    candidates.add(`${baseWord}ing`);
+  }
+
+  return [...candidates];
+}
+
 function resolveInputPath(filePath) {
   if (path.isAbsolute(filePath)) {
     return filePath;
@@ -184,6 +223,7 @@ function buildMeta(policyVersion, sourceVersion, counters, finalTotal, frequency
       removedDemonyms: counters.removedDemonyms,
       removedAbbreviations: counters.removedAbbreviations,
       removedRare: counters.removedRare,
+      inflectionsAdded: counters.inflectionsAdded,
       allowlistAdded: counters.allowlistAdded,
       blocklistRemoved: counters.blocklistRemoved,
       finalTotal
@@ -200,6 +240,7 @@ async function main() {
 
   const policy = JSON.parse(policyRaw);
   const frequencyConfig = policy.frequency ?? {};
+  const includeCommonInflections = Boolean(policy.includeCommonInflections);
   const allowlist = toSet(parseWordLines(allowRaw));
   const blocklist = toSet(parseWordLines(blockRaw));
 
@@ -223,6 +264,7 @@ async function main() {
     removedDemonyms: 0,
     removedAbbreviations: 0,
     removedRare: 0,
+    inflectionsAdded: 0,
     allowlistAdded: 0,
     blocklistRemoved: 0
   };
@@ -241,6 +283,33 @@ async function main() {
     normalized.add(word.normalize("NFKC"));
   }
   counters.normalizedTotal = normalized.size;
+  const normalizedLowerSet = new Set([...normalized].map((word) => word.toLowerCase()));
+  const nonFrequencyEligible = new Set();
+  for (const rawWord of normalized) {
+    const word = rawWord.toLowerCase();
+    if (!isAlphaWord(word)) {
+      continue;
+    }
+    if (word.length < (policy.minimumLength ?? 4)) {
+      continue;
+    }
+    if (matchesBlockedPattern(word, blockedPatterns)) {
+      continue;
+    }
+    if (policy.excludeProfanity && profanity.has(word)) {
+      continue;
+    }
+    if (policy.excludeGeoTerms && geoTerms.has(word)) {
+      continue;
+    }
+    if (policy.excludeDemonyms && demonyms.has(word)) {
+      continue;
+    }
+    if (policy.excludeRare && rareTerms.has(word)) {
+      continue;
+    }
+    nonFrequencyEligible.add(word);
+  }
 
   const filtered = new Set();
 
@@ -302,6 +371,25 @@ async function main() {
     if (!filtered.has(word)) {
       filtered.add(word);
       counters.allowlistAdded += 1;
+    }
+  }
+
+  if (includeCommonInflections) {
+    const acceptedBaseWords = [...filtered];
+    for (const baseWord of acceptedBaseWords) {
+      const candidates = buildCommonInflectionCandidates(baseWord);
+      for (const candidate of candidates) {
+        if (!normalizedLowerSet.has(candidate)) {
+          continue;
+        }
+        if (!nonFrequencyEligible.has(candidate)) {
+          continue;
+        }
+        if (!filtered.has(candidate)) {
+          filtered.add(candidate);
+          counters.inflectionsAdded += 1;
+        }
+      }
     }
   }
 
