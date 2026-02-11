@@ -92,7 +92,11 @@ body {
 .app-shell {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 1rem;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
 }
 
 .topbar,
@@ -663,7 +667,11 @@ td {
 
   .session-panel.is-open-mobile {
     position: fixed;
-    inset: 0.85rem;
+    inset:
+      max(0.85rem, env(safe-area-inset-top))
+      max(0.85rem, env(safe-area-inset-right))
+      max(0.85rem, env(safe-area-inset-bottom))
+      max(0.85rem, env(safe-area-inset-left));
     z-index: 30;
     display: block;
     margin-top: 0;
@@ -691,6 +699,15 @@ td {
 
   .hints-panel {
     overflow: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback,
+  .rank-marker,
+  .hex {
+    transition: none !important;
+    animation: none !important;
   }
 }
 

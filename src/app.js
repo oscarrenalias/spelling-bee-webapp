@@ -245,6 +245,15 @@ function deleteLastLetterFromWordInput() {
   syncWordInputCenterLetterState();
 }
 
+function focusWordInputForTyping() {
+  if (isMobileViewport()) {
+    elements.wordInput.blur();
+    return;
+  }
+
+  elements.wordInput.focus({ preventScroll: true });
+}
+
 function isTextEditingTarget(target) {
   return (
     target instanceof HTMLInputElement ||
@@ -487,7 +496,7 @@ elements.wordForm.addEventListener("submit", async (event) => {
   await persistAndRefreshSession(runtime.activeState);
   elements.wordInput.value = "";
   syncWordInputCenterLetterState();
-  elements.wordInput.focus();
+  focusWordInputForTyping();
 });
 
 elements.wordInput.addEventListener("input", () => {
@@ -498,6 +507,10 @@ elements.board.addEventListener("letter-select", (event) => {
   const letter = event.detail?.letter;
   if (typeof letter !== "string") {
     return;
+  }
+
+  if (isMobileViewport() && document.activeElement === elements.wordInput) {
+    elements.wordInput.blur();
   }
 
   appendLetterToWordInput(letter);

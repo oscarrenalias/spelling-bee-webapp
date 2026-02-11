@@ -77,7 +77,18 @@
             <form id="word-form" class="word-form" autocomplete="off">
               <div class="word-input-shell">
                 <div id="word-input-highlight" class="word-input-highlight" aria-hidden="true"></div>
-                <input id="word-input" type="text" minlength="4" spellcheck="false" required />
+                <input
+                  id="word-input"
+                  type="text"
+                  minlength="4"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocomplete="off"
+                  autocorrect="off"
+                  inputmode="text"
+                  enterkeyhint="done"
+                  required
+                />
               </div>
             </form>
             <letter-board id="letter-board"></letter-board>

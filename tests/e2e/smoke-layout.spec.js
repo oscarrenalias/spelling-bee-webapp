@@ -188,6 +188,47 @@ test.describe("core ui smoke", () => {
     }
   });
 
+  test("mobile word input uses keyboard-friendly attributes", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "Mobile-only assertion");
+    await gotoAndWaitForReady(page);
+
+    const attrs = await page.evaluate(() => {
+      const input = document.querySelector("#word-input");
+      if (!(input instanceof HTMLInputElement)) {
+        return null;
+      }
+      return {
+        autocapitalize: input.getAttribute("autocapitalize"),
+        autocomplete: input.getAttribute("autocomplete"),
+        autocorrect: input.getAttribute("autocorrect"),
+        inputmode: input.getAttribute("inputmode"),
+        enterkeyhint: input.getAttribute("enterkeyhint")
+      };
+    });
+
+    expect(attrs).not.toBeNull();
+    expect(attrs.autocapitalize).toBe("off");
+    expect(attrs.autocomplete).toBe("off");
+    expect(attrs.autocorrect).toBe("off");
+    expect(attrs.inputmode).toBe("text");
+    expect(attrs.enterkeyhint).toBe("done");
+  });
+
+  test("mobile submit does not force-focus word input", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "Mobile-only assertion");
+    await gotoAndWaitForReady(page);
+
+    const centerHex = page.locator("letter-board").locator("polygon[data-hex='center']");
+    await centerHex.click();
+    await centerHex.click();
+    await centerHex.click();
+    await centerHex.click();
+    await page.locator("#submit-word").click();
+
+    const isFocused = await page.evaluate(() => document.activeElement?.id === "word-input");
+    expect(isFocused).toBe(false);
+  });
+
   test("desktop keeps found-words list internally scrollable", async ({ page, isMobile }) => {
     test.skip(isMobile, "Desktop-only assertion");
     await gotoAndWaitForReady(page);
@@ -207,6 +248,37 @@ test.describe("core ui smoke", () => {
     expect(foundWordsStyles).not.toBeNull();
     expect(foundWordsStyles.maxHeight).not.toBe("none");
     expect(foundWordsStyles.overflowY).toBe("auto");
+  });
+
+  test("board letters expose accessible controls and keyboard activation", async ({ page }) => {
+    await gotoAndWaitForReady(page);
+
+    const semantics = await page.locator("letter-board").evaluate((host) => {
+      const polygons = [...(host.shadowRoot?.querySelectorAll("polygon.hex[data-slot]") ?? [])];
+      const allSemanticallyInteractive = polygons.every((polygon) => {
+        return polygon.getAttribute("role") === "button" && polygon.getAttribute("tabindex") === "0";
+      });
+      const allHaveLabels = polygons.every((polygon) => Boolean(polygon.getAttribute("aria-label")));
+      return {
+        count: polygons.length,
+        allSemanticallyInteractive,
+        allHaveLabels
+      };
+    });
+
+    expect(semantics.count).toBe(7);
+    expect(semantics.allSemanticallyInteractive).toBe(true);
+    expect(semantics.allHaveLabels).toBe(true);
+
+    const beforeLength = await page.locator("#word-input").evaluate((input) => input.value.length);
+    await page.locator("letter-board").evaluate((host) => {
+      const centerHex = host.shadowRoot?.querySelector("polygon.hex[data-slot='center']");
+      if (centerHex instanceof SVGElement) {
+        centerHex.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      }
+    });
+    const afterLength = await page.locator("#word-input").evaluate((input) => input.value.length);
+    expect(afterLength).toBe(beforeLength + 1);
   });
 
   test("desktop keeps inline sessions panel visible", async ({ page, isMobile }) => {
