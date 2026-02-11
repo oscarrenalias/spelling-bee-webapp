@@ -118,15 +118,7 @@ class LetterBoard extends HTMLElement {
     this.hexOrder = ["top", "rightTop", "rightBottom", "bottom", "leftBottom", "leftTop"];
     this.drawHexes();
     this.positionLabels();
-    this.configureInteractiveHexes();
     this.installInteractionHandlers();
-  }
-
-  configureInteractiveHexes() {
-    for (const hex of this.shadowRoot.querySelectorAll("polygon.hex")) {
-      hex.setAttribute("role", "button");
-      hex.setAttribute("tabindex", "0");
-    }
   }
 
   installInteractionHandlers() {
@@ -188,44 +180,6 @@ class LetterBoard extends HTMLElement {
       );
     });
 
-    this.shadowRoot.addEventListener("keydown", (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      const interactive = target.closest("polygon.hex[data-slot]");
-      if (!interactive) {
-        return;
-      }
-
-      if (event.key !== "Enter" && event.key !== " ") {
-        return;
-      }
-
-      event.preventDefault();
-
-      const slot = interactive.getAttribute("data-slot");
-      if (!slot) {
-        return;
-      }
-
-      const letter = this.getLetterForSlot(slot);
-      if (!letter) {
-        return;
-      }
-
-      this.dispatchEvent(
-        new CustomEvent("letter-select", {
-          detail: {
-            slot,
-            letter
-          },
-          bubbles: true,
-          composed: true
-        })
-      );
-    });
   }
 
   getLetterForSlot(slot) {

@@ -327,36 +327,20 @@ test.describe("core ui smoke", () => {
     expect(foundWordsStyles.overflowY).toBe("auto");
   });
 
-  test("board letters expose accessible controls and keyboard activation", async ({ page }) => {
+  test("board letters expose aria labels", async ({ page }) => {
     await gotoAndWaitForReady(page);
 
     const semantics = await page.locator("letter-board").evaluate((host) => {
       const polygons = [...(host.shadowRoot?.querySelectorAll("polygon.hex[data-slot]") ?? [])];
-      const allSemanticallyInteractive = polygons.every((polygon) => {
-        return polygon.getAttribute("role") === "button" && polygon.getAttribute("tabindex") === "0";
-      });
       const allHaveLabels = polygons.every((polygon) => Boolean(polygon.getAttribute("aria-label")));
       return {
         count: polygons.length,
-        allSemanticallyInteractive,
         allHaveLabels
       };
     });
 
     expect(semantics.count).toBe(7);
-    expect(semantics.allSemanticallyInteractive).toBe(true);
     expect(semantics.allHaveLabels).toBe(true);
-
-    const beforeLength = await page.locator("#word-input").evaluate((input) => input.value.length);
-    await page.locator("letter-board").evaluate((host) => {
-      const centerHex = host.shadowRoot?.querySelector("polygon.hex[data-slot='center']");
-      if (centerHex instanceof SVGElement) {
-        centerHex.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-        centerHex.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
-      }
-    });
-    const afterLength = await page.locator("#word-input").evaluate((input) => input.value.length);
-    expect(afterLength).toBe(beforeLength + 2);
   });
 
   test("desktop keeps inline sessions panel visible", async ({ page, isMobile }) => {
