@@ -217,20 +217,3 @@ Integration tests cover:
 Current status:
 
 - All existing tests pass via `npm test`
-
-## 11. MVP Acceptance Criteria Status
-
-1. [x] Browser-only with no backend
-2. [x] Local puzzle loading and daily/random sessions
-3. [x] Validation rules enforced (letters, center, min length, duplicates)
-4. [x] NYT-style scoring + rank progression
-5. [x] Toggleable hints (remaining points + prefix counts)
-6. [x] IndexedDB persistence for multiple sessions
-7. [x] Session recovery after reload
-8. [x] Random sessions reproducible from seed
-
-## 12. Open Follow-Up (Post-MVP)
-
-- Add explicit puzzle parity fixture suite against curated expectations
-- Run dedicated full accessibility hardening pass and document outcomes
-- Decide whether hint usage analytics should include more than static `viewCount`

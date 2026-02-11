@@ -11,6 +11,12 @@
     "build:code": "node tools/check-code.mjs",
     "build": "npm run build:data && npm run build:code",
     "dev": "node tools/dev.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }
