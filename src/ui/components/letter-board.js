@@ -180,6 +180,10 @@ class LetterBoard extends HTMLElement {
       );
     });
 
+    this.shadowRoot.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+    });
+
   }
 
   getLetterForSlot(slot) {

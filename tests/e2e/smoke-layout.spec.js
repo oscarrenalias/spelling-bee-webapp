@@ -380,6 +380,26 @@ test.describe("core ui smoke", () => {
     expect(semantics.allHaveLabels).toBe(true);
   });
 
+  test("board hexes prevent default double-click behavior", async ({ page }) => {
+    await gotoAndWaitForReady(page);
+
+    const wasDefaultPrevented = await page.locator("letter-board").evaluate((host) => {
+      const centerHex = host.shadowRoot?.querySelector("polygon.hex.center");
+      if (!(centerHex instanceof SVGElement)) {
+        return null;
+      }
+
+      const event = new MouseEvent("dblclick", {
+        bubbles: true,
+        cancelable: true
+      });
+      centerHex.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+
+    expect(wasDefaultPrevented).toBe(true);
+  });
+
   test("desktop keeps inline sessions panel visible", async ({ page, isMobile }) => {
     test.skip(isMobile, "Desktop-only assertion");
     await gotoAndWaitForReady(page);
