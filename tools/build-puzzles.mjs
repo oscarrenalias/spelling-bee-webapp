@@ -14,6 +14,14 @@ const MIN_WORDS = 12;
 const MIN_PANGRAMS = 1;
 const MAX_PUZZLES = 60;
 
+function comparablePayload(payload) {
+  return {
+    version: payload.version,
+    sourceDictionaryVersion: payload.sourceDictionaryVersion,
+    puzzles: payload.puzzles
+  };
+}
+
 function parseArgs(argv) {
   const parsed = {
     startDate: null,
@@ -190,7 +198,23 @@ async function main() {
     puzzles
   };
 
-  await fs.writeFile(OUTPUT_PUZZLES, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  let shouldWrite = true;
+  try {
+    const existingRaw = await fs.readFile(OUTPUT_PUZZLES, "utf8");
+    const existingPayload = JSON.parse(existingRaw);
+    shouldWrite = JSON.stringify(comparablePayload(existingPayload)) !== JSON.stringify(comparablePayload(payload));
+  } catch (error) {
+    if (!(error && typeof error === "object" && "code" in error && error.code === "ENOENT")) {
+      throw error;
+    }
+  }
+
+  if (shouldWrite) {
+    await fs.writeFile(OUTPUT_PUZZLES, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  } else {
+    console.log("Puzzle build skipped write (no content changes).");
+  }
+
   console.log(`Puzzle build complete. candidates=${candidates.length} published=${puzzles.length}`);
 }
 

@@ -7,6 +7,13 @@ async function gotoAndWaitForReady(page) {
   await expect(page.locator("letter-board")).toBeVisible();
 }
 
+async function appendCenterLetter(page, count = 1) {
+  const centerHex = page.locator("letter-board").locator("polygon[data-hex='center']");
+  for (let idx = 0; idx < count; idx += 1) {
+    await centerHex.click();
+  }
+}
+
 test.describe("core ui smoke", () => {
   test("loads game shell and allows keyboard submission", async ({ page }) => {
     await gotoAndWaitForReady(page);
@@ -85,6 +92,31 @@ test.describe("core ui smoke", () => {
     await expect(page.locator(".session-panel")).toBeHidden();
   });
 
+  test("mobile sessions overlay closes via Escape and backdrop", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "Mobile-only assertion");
+    await gotoAndWaitForReady(page);
+
+    await page.locator("#open-sessions").click();
+    await expect(page.locator(".session-panel")).toBeVisible();
+    await expect(page.locator("#open-sessions")).toHaveAttribute("aria-expanded", "true");
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".session-panel")).toBeHidden();
+    await expect(page.locator("#open-sessions")).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#sessions-backdrop")).toBeHidden();
+
+    await page.locator("#open-sessions").click();
+    await expect(page.locator(".session-panel")).toBeVisible();
+
+    await page.evaluate(() => {
+      const backdrop = document.getElementById("sessions-backdrop");
+      backdrop?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await expect(page.locator(".session-panel")).toBeHidden();
+    await expect(page.locator("#open-sessions")).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#sessions-backdrop")).toBeHidden();
+  });
+
   test("mobile top bar keeps seed controls collapsed by default", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Mobile-only assertion");
     await gotoAndWaitForReady(page);
@@ -95,6 +127,21 @@ test.describe("core ui smoke", () => {
     await page.locator("#toggle-seed-controls").click();
     await expect(page.locator("#seed-form")).toBeVisible();
     await expect(page.locator("#toggle-seed-controls")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("mobile seed controls collapse again after starting a seed game", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "Mobile-only assertion");
+    await gotoAndWaitForReady(page);
+
+    await page.locator("#toggle-seed-controls").click();
+    await expect(page.locator("#seed-form")).toBeVisible();
+    await expect(page.locator("#toggle-seed-controls")).toHaveAttribute("aria-expanded", "true");
+
+    await page.locator("#seed-input").fill("smoke-seed");
+    await page.locator("#seed-form button[type='submit']").click();
+
+    await expect(page.locator("#seed-form")).toBeHidden();
+    await expect(page.locator("#toggle-seed-controls")).toHaveAttribute("aria-expanded", "false");
   });
 
   test("mobile status summary keeps score rank and found on one row", async ({ page, isMobile }) => {
@@ -218,15 +265,45 @@ test.describe("core ui smoke", () => {
     test.skip(!isMobile, "Mobile-only assertion");
     await gotoAndWaitForReady(page);
 
-    const centerHex = page.locator("letter-board").locator("polygon[data-hex='center']");
-    await centerHex.click();
-    await centerHex.click();
-    await centerHex.click();
-    await centerHex.click();
+    await appendCenterLetter(page, 4);
     await page.locator("#submit-word").click();
 
     const isFocused = await page.evaluate(() => document.activeElement?.id === "word-input");
     expect(isFocused).toBe(false);
+  });
+
+  test("desktop submit keeps word input focused for rapid typing", async ({ page, isMobile }) => {
+    test.skip(isMobile, "Desktop-only assertion");
+    await gotoAndWaitForReady(page);
+
+    const input = page.locator("#word-input");
+    await input.fill("zzzz");
+    await input.press("Enter");
+
+    const isFocused = await page.evaluate(() => document.activeElement?.id === "word-input");
+    expect(isFocused).toBe(true);
+  });
+
+  test("resize from mobile to desktop clears mobile overlay states", async ({ page, isMobile }) => {
+    test.skip(isMobile, "Desktop-only assertion");
+    await gotoAndWaitForReady(page);
+
+    await page.setViewportSize({ width: 820, height: 900 });
+    await expect(page.locator("#open-sessions")).toBeVisible();
+    await expect(page.locator("#toggle-seed-controls")).toBeVisible();
+
+    await page.locator("#toggle-seed-controls").click();
+    await page.locator("#open-sessions").click();
+    await expect(page.locator("#open-sessions")).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator("#toggle-seed-controls")).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator(".session-panel")).toBeVisible();
+    await expect(page.locator("#seed-form")).toBeVisible();
+
+    await page.setViewportSize({ width: 1200, height: 900 });
+    await expect(page.locator("#open-sessions")).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#toggle-seed-controls")).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#sessions-backdrop")).toBeHidden();
+    await expect(page.locator("#seed-form")).toBeVisible();
   });
 
   test("desktop keeps found-words list internally scrollable", async ({ page, isMobile }) => {
@@ -275,10 +352,11 @@ test.describe("core ui smoke", () => {
       const centerHex = host.shadowRoot?.querySelector("polygon.hex[data-slot='center']");
       if (centerHex instanceof SVGElement) {
         centerHex.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+        centerHex.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
       }
     });
     const afterLength = await page.locator("#word-input").evaluate((input) => input.value.length);
-    expect(afterLength).toBe(beforeLength + 1);
+    expect(afterLength).toBe(beforeLength + 2);
   });
 
   test("desktop keeps inline sessions panel visible", async ({ page, isMobile }) => {
@@ -294,20 +372,16 @@ test.describe("core ui smoke", () => {
   test("board click/tap, delete, and submit controls work", async ({ page }) => {
     await gotoAndWaitForReady(page);
 
-    const centerHex = page.locator("letter-board").locator("polygon[data-hex='center']");
     await expect(page.locator("#submit-word")).toBeVisible();
     await expect(page.locator("#delete-letter")).toBeVisible();
 
-    await centerHex.click();
-    await centerHex.click();
-    await centerHex.click();
-    await centerHex.click();
+    await appendCenterLetter(page, 4);
     await expect(page.locator("#word-input")).toHaveValue(/^[a-z]{4}$/);
 
     await page.locator("#delete-letter").click();
     await expect(page.locator("#word-input")).toHaveValue(/^[a-z]{3}$/);
 
-    await centerHex.click();
+    await appendCenterLetter(page, 1);
     await expect(page.locator("#word-input")).toHaveValue(/^[a-z]{4}$/);
 
     await page.locator("#submit-word").click();
