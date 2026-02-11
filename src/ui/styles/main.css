@@ -154,6 +154,10 @@ button {
   font-weight: 700;
 }
 
+button:active {
+  transform: translateY(1px);
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -513,6 +517,8 @@ ul {
   color: var(--ink);
   padding: 0;
   font: inherit;
+  min-height: 44px;
+  touch-action: manipulation;
 }
 
 #sessions button[aria-current="true"] {
@@ -633,6 +639,12 @@ td {
     display: inline-flex;
   }
 
+  button {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
   .board-actions {
     position: sticky;
     bottom: max(0.45rem, env(safe-area-inset-bottom));
@@ -666,6 +678,10 @@ td {
   .session-panel.is-open-mobile #sessions {
     max-height: min(55dvh, 520px);
     overflow: auto;
+  }
+
+  #sessions li {
+    padding: 0.5rem 0.7rem;
   }
 
   #found-words {

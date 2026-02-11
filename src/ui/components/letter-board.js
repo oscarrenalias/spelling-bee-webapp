@@ -4,6 +4,7 @@ template.innerHTML = `
     :host {
       display: block;
       margin-top: 0.5rem;
+      touch-action: manipulation;
     }
 
     .wrap {
@@ -23,10 +24,16 @@ template.innerHTML = `
       stroke-width: 5;
       stroke-linejoin: round;
       cursor: pointer;
+      transition: transform 90ms ease, filter 90ms ease;
     }
 
     .hex.center {
       fill: var(--accent, #f6b91a);
+    }
+
+    .hex.is-pressed {
+      transform: scale(0.96);
+      filter: brightness(0.92);
     }
 
     .letter {
@@ -115,6 +122,31 @@ class LetterBoard extends HTMLElement {
   }
 
   installInteractionHandlers() {
+    const clearPressed = () => {
+      for (const pressed of this.shadowRoot.querySelectorAll(".hex.is-pressed")) {
+        pressed.classList.remove("is-pressed");
+      }
+    };
+
+    this.shadowRoot.addEventListener("pointerdown", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const interactive = target.closest("polygon.hex");
+      if (!interactive) {
+        return;
+      }
+
+      clearPressed();
+      interactive.classList.add("is-pressed");
+    });
+
+    this.shadowRoot.addEventListener("pointerup", clearPressed);
+    this.shadowRoot.addEventListener("pointercancel", clearPressed);
+    this.shadowRoot.addEventListener("pointerleave", clearPressed);
+
     this.shadowRoot.addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof Element)) {

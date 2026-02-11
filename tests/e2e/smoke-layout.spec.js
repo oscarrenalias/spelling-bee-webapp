@@ -166,6 +166,28 @@ test.describe("core ui smoke", () => {
     expect(foundWordsStyles.overflowY).toBe("visible");
   });
 
+  test("mobile controls meet 44px touch-target minimum", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "Mobile-only assertion");
+    await gotoAndWaitForReady(page);
+
+    const targetMetrics = await page.evaluate(() => {
+      const selectors = [".board-actions #delete-letter", ".board-actions #submit-word", ".board-actions #shuffle-letters"];
+      return selectors.map((selector) => {
+        const node = document.querySelector(selector);
+        if (!(node instanceof HTMLElement)) {
+          return { selector, width: 0, height: 0 };
+        }
+        const rect = node.getBoundingClientRect();
+        return { selector, width: rect.width, height: rect.height };
+      });
+    });
+
+    for (const metric of targetMetrics) {
+      expect(metric.width).toBeGreaterThanOrEqual(44);
+      expect(metric.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+
   test("desktop keeps found-words list internally scrollable", async ({ page, isMobile }) => {
     test.skip(isMobile, "Desktop-only assertion");
     await gotoAndWaitForReady(page);
