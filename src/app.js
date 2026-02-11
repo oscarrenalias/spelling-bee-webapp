@@ -32,6 +32,10 @@ const elements = {
   hintsContent: document.getElementById("hints-content"),
   toggleHintsButton: document.getElementById("toggle-hints"),
   sessions: document.getElementById("sessions"),
+  sessionPanel: document.querySelector(".session-panel"),
+  openSessionsButton: document.getElementById("open-sessions"),
+  closeSessionsButton: document.getElementById("close-sessions"),
+  sessionsBackdrop: document.getElementById("sessions-backdrop"),
   newRandomButton: document.getElementById("new-random-game"),
   shuffleLettersButton: document.getElementById("shuffle-letters"),
   seedForm: document.getElementById("seed-form"),
@@ -47,7 +51,8 @@ const runtime = {
   boardOuterLetters: null,
   boardPuzzleId: null,
   feedbackTimeoutId: null,
-  rankTrackSnapshot: null
+  rankTrackSnapshot: null,
+  mobileSessionsOpen: false
 };
 
 const SUCCESS_FEEDBACK_TIMEOUT_MS = 2600;
@@ -264,6 +269,18 @@ function renderHintsVisibility() {
   elements.toggleHintsButton.setAttribute("aria-expanded", String(runtime.hintsVisible));
 }
 
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
+function setMobileSessionsOpen(open) {
+  runtime.mobileSessionsOpen = open;
+  const shouldOpen = open && isMobileViewport();
+  elements.sessionPanel.classList.toggle("is-open-mobile", shouldOpen);
+  elements.sessionsBackdrop.hidden = !shouldOpen;
+  elements.openSessionsButton.setAttribute("aria-expanded", String(shouldOpen));
+}
+
 function render(state) {
   syncBoardLetters(state);
   elements.board.setLetters(state.puzzle.centerLetter, runtime.boardOuterLetters);
@@ -439,6 +456,12 @@ async function boot() {
   renderReady();
 }
 
+window.addEventListener("resize", () => {
+  if (!isMobileViewport() && runtime.mobileSessionsOpen) {
+    setMobileSessionsOpen(false);
+  }
+});
+
 elements.wordForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!runtime.activeState) {
@@ -469,6 +492,18 @@ elements.board.addEventListener("letter-select", (event) => {
 
 elements.newRandomButton.addEventListener("click", async () => {
   await startRandomSession();
+});
+
+elements.openSessionsButton.addEventListener("click", () => {
+  setMobileSessionsOpen(true);
+});
+
+elements.closeSessionsButton.addEventListener("click", () => {
+  setMobileSessionsOpen(false);
+});
+
+elements.sessionsBackdrop.addEventListener("click", () => {
+  setMobileSessionsOpen(false);
 });
 
 elements.deleteLetterButton.addEventListener("click", () => {
@@ -528,6 +563,7 @@ elements.sessions.addEventListener("click", async (event) => {
   runtime.activeState = hydrated;
   render(runtime.activeState);
   renderSessionsList();
+  setMobileSessionsOpen(false);
 });
 
 document.addEventListener("keydown", (event) => {
@@ -550,6 +586,12 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
     elements.wordForm.requestSubmit();
+    return;
+  }
+
+  if (event.key === "Escape" && runtime.mobileSessionsOpen) {
+    event.preventDefault();
+    setMobileSessionsOpen(false);
   }
 });
 

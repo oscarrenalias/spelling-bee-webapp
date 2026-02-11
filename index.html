@@ -26,6 +26,9 @@
           <p id="seed-display" class="seed-display"></p>
         </div>
         <div class="topbar-actions">
+          <button id="open-sessions" type="button" class="secondary-button open-sessions-button" aria-expanded="false">
+            Sessions
+          </button>
           <button id="new-random-game" type="button">New Random Game</button>
           <form id="seed-form" class="seed-form" autocomplete="off">
             <input
@@ -77,7 +80,10 @@
           </div>
 
           <section class="session-panel">
-            <h2>Sessions</h2>
+            <div class="session-panel-header">
+              <h2>Sessions</h2>
+              <button id="close-sessions" type="button" class="secondary-button close-sessions-button">Close</button>
+            </div>
             <ul id="sessions"></ul>
           </section>
         </div>
@@ -109,6 +115,7 @@
           </section>
         </aside>
       </section>
+      <div id="sessions-backdrop" class="sessions-backdrop" hidden></div>
     </main>
 
     <script type="module" src="./src/app.js"></script>

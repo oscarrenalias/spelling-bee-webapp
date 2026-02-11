@@ -57,6 +57,42 @@ test.describe("core ui smoke", () => {
     expect(hasOverflow).toBe(false);
   });
 
+  test("mobile sessions open in dedicated overlay and stay out of normal flow", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "Mobile-only assertion");
+    await gotoAndWaitForReady(page);
+
+    await expect(page.locator(".session-panel")).toBeHidden();
+    await expect(page.locator("#open-sessions")).toBeVisible();
+
+    const layoutOrder = await page.evaluate(() => {
+      const board = document.querySelector(".board-stack");
+      const found = document.querySelector(".found-panel");
+      if (!board || !found) {
+        return null;
+      }
+      const boardRect = board.getBoundingClientRect();
+      const foundRect = found.getBoundingClientRect();
+      return { foundBelowBoard: foundRect.top > boardRect.bottom };
+    });
+
+    expect(layoutOrder).not.toBeNull();
+    expect(layoutOrder.foundBelowBoard).toBe(true);
+
+    await page.locator("#open-sessions").click();
+    await expect(page.locator(".session-panel")).toBeVisible();
+
+    await page.locator("#close-sessions").click();
+    await expect(page.locator(".session-panel")).toBeHidden();
+  });
+
+  test("desktop keeps inline sessions panel visible", async ({ page, isMobile }) => {
+    test.skip(isMobile, "Desktop-only assertion");
+    await gotoAndWaitForReady(page);
+
+    await expect(page.locator(".session-panel")).toBeVisible();
+    await expect(page.locator("#open-sessions")).toBeHidden();
+  });
+
   test("board click/tap, delete, and submit controls work", async ({ page }) => {
     await gotoAndWaitForReady(page);
 
