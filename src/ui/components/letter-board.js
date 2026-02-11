@@ -22,6 +22,7 @@ template.innerHTML = `
       stroke: var(--board-hex-stroke, #090909);
       stroke-width: 5;
       stroke-linejoin: round;
+      cursor: pointer;
     }
 
     .hex.center {
@@ -37,6 +38,7 @@ template.innerHTML = `
       font-family: "Avenir Next", "Segoe UI", sans-serif;
       text-transform: uppercase;
       user-select: none;
+      pointer-events: none;
     }
 
     @media (max-width: 560px) {
@@ -51,13 +53,13 @@ template.innerHTML = `
   </style>
   <div class="wrap">
     <svg viewBox="0 0 380 340" role="img" aria-label="Puzzle letter board">
-      <polygon class="hex" data-hex="0"></polygon>
-      <polygon class="hex" data-hex="1"></polygon>
-      <polygon class="hex" data-hex="2"></polygon>
-      <polygon class="hex" data-hex="3"></polygon>
-      <polygon class="hex" data-hex="4"></polygon>
-      <polygon class="hex" data-hex="5"></polygon>
-      <polygon class="hex center" data-hex="center"></polygon>
+      <polygon class="hex" data-hex="0" data-slot="0"></polygon>
+      <polygon class="hex" data-hex="1" data-slot="1"></polygon>
+      <polygon class="hex" data-hex="2" data-slot="2"></polygon>
+      <polygon class="hex" data-hex="3" data-slot="3"></polygon>
+      <polygon class="hex" data-hex="4" data-slot="4"></polygon>
+      <polygon class="hex" data-hex="5" data-slot="5"></polygon>
+      <polygon class="hex center" data-hex="center" data-slot="center"></polygon>
 
       <text class="letter" data-slot="0"></text>
       <text class="letter" data-slot="1"></text>
@@ -89,6 +91,10 @@ class LetterBoard extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this.shadowRoot.append(template.content.cloneNode(true));
+    this.currentLetters = {
+      center: "",
+      outer: []
+    };
     this.layout = {
       r: 56,
       positions: {
@@ -105,6 +111,55 @@ class LetterBoard extends HTMLElement {
     this.hexOrder = ["top", "rightTop", "rightBottom", "bottom", "leftBottom", "leftTop"];
     this.drawHexes();
     this.positionLabels();
+    this.installInteractionHandlers();
+  }
+
+  installInteractionHandlers() {
+    this.shadowRoot.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const interactive = target.closest("[data-slot]");
+      if (!interactive) {
+        return;
+      }
+
+      const slot = interactive.getAttribute("data-slot");
+      if (!slot) {
+        return;
+      }
+
+      const letter = this.getLetterForSlot(slot);
+      if (!letter) {
+        return;
+      }
+
+      this.dispatchEvent(
+        new CustomEvent("letter-select", {
+          detail: {
+            slot,
+            letter
+          },
+          bubbles: true,
+          composed: true
+        })
+      );
+    });
+  }
+
+  getLetterForSlot(slot) {
+    if (slot === "center") {
+      return this.currentLetters.center;
+    }
+
+    const index = Number(slot);
+    if (!Number.isInteger(index) || index < 0 || index >= this.currentLetters.outer.length) {
+      return "";
+    }
+
+    return this.currentLetters.outer[index] ?? "";
   }
 
   drawHexes() {
@@ -126,7 +181,7 @@ class LetterBoard extends HTMLElement {
     for (let idx = 0; idx < this.hexOrder.length; idx += 1) {
       const key = this.hexOrder[idx];
       const pos = this.layout.positions[key];
-      const label = this.shadowRoot.querySelector(`[data-slot=\"${idx}\"]`);
+      const label = this.shadowRoot.querySelector(`text[data-slot=\"${idx}\"]`);
       if (label) {
         label.setAttribute("x", String(pos.x));
         label.setAttribute("y", String(pos.y));
@@ -134,17 +189,22 @@ class LetterBoard extends HTMLElement {
     }
 
     const center = this.layout.positions.center;
-    const centerLabel = this.shadowRoot.querySelector('[data-slot="center"]');
+    const centerLabel = this.shadowRoot.querySelector('text[data-slot="center"]');
     centerLabel.setAttribute("x", String(center.x));
     centerLabel.setAttribute("y", String(center.y));
   }
 
   setLetters(centerLetter, outerLetters) {
-    const center = this.shadowRoot.querySelector('[data-slot="center"]');
+    this.currentLetters = {
+      center: centerLetter ?? "",
+      outer: [...outerLetters]
+    };
+
+    const center = this.shadowRoot.querySelector('text[data-slot="center"]');
     center.textContent = centerLetter;
 
     outerLetters.forEach((letter, idx) => {
-      const slot = this.shadowRoot.querySelector(`[data-slot="${idx}"]`);
+      const slot = this.shadowRoot.querySelector(`text[data-slot="${idx}"]`);
       if (slot) {
         slot.textContent = letter;
       }

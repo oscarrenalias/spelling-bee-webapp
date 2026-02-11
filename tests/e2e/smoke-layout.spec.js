@@ -56,4 +56,54 @@ test.describe("core ui smoke", () => {
 
     expect(hasOverflow).toBe(false);
   });
+
+  test("board click/tap, delete, and submit controls work", async ({ page }) => {
+    await gotoAndWaitForReady(page);
+
+    const centerHex = page.locator("letter-board").locator("polygon[data-hex='center']");
+    await expect(page.locator("#submit-word")).toBeVisible();
+    await expect(page.locator("#delete-letter")).toBeVisible();
+
+    await centerHex.click();
+    await centerHex.click();
+    await centerHex.click();
+    await centerHex.click();
+    await expect(page.locator("#word-input")).toHaveValue(/^[a-z]{4}$/);
+
+    await page.locator("#delete-letter").click();
+    await expect(page.locator("#word-input")).toHaveValue(/^[a-z]{3}$/);
+
+    await centerHex.click();
+    await expect(page.locator("#word-input")).toHaveValue(/^[a-z]{4}$/);
+
+    await page.locator("#submit-word").click();
+    await expect(page.locator("#feedback")).not.toHaveText("");
+  });
+
+  test("board letters are rendered visibly", async ({ page }) => {
+    await gotoAndWaitForReady(page);
+
+    const centerLabelMetrics = await page.locator("letter-board").evaluate((host) => {
+      const centerText = host.shadowRoot?.querySelector("text[data-slot='center']");
+      if (!(centerText instanceof SVGTextElement)) {
+        return null;
+      }
+
+      const box = centerText.getBBox();
+      return {
+        text: centerText.textContent ?? "",
+        x: centerText.getAttribute("x"),
+        y: centerText.getAttribute("y"),
+        width: box.width,
+        height: box.height
+      };
+    });
+
+    expect(centerLabelMetrics).not.toBeNull();
+    expect(centerLabelMetrics.text.trim().length).toBeGreaterThan(0);
+    expect(centerLabelMetrics.x).toBeTruthy();
+    expect(centerLabelMetrics.y).toBeTruthy();
+    expect(centerLabelMetrics.width).toBeGreaterThan(0);
+    expect(centerLabelMetrics.height).toBeGreaterThan(0);
+  });
 });

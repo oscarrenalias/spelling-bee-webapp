@@ -35,7 +35,8 @@ const elements = {
   newRandomButton: document.getElementById("new-random-game"),
   shuffleLettersButton: document.getElementById("shuffle-letters"),
   seedForm: document.getElementById("seed-form"),
-  seedInput: document.getElementById("seed-input")
+  seedInput: document.getElementById("seed-input"),
+  deleteLetterButton: document.getElementById("delete-letter")
 };
 
 const runtime = {
@@ -217,6 +218,24 @@ function syncBoardLetters(state) {
     runtime.boardOuterLetters = [...state.puzzle.outerLetters];
     runtime.boardPuzzleId = state.puzzle.id;
   }
+}
+
+function appendLetterToWordInput(letter) {
+  if (!letter || !LETTER_KEY_PATTERN.test(letter)) {
+    return;
+  }
+
+  elements.wordInput.value += letter.toLowerCase();
+  syncWordInputCenterLetterState();
+}
+
+function deleteLastLetterFromWordInput() {
+  if (!elements.wordInput.value) {
+    return;
+  }
+
+  elements.wordInput.value = elements.wordInput.value.slice(0, -1);
+  syncWordInputCenterLetterState();
 }
 
 function isTextEditingTarget(target) {
@@ -439,8 +458,21 @@ elements.wordInput.addEventListener("input", () => {
   syncWordInputCenterLetterState();
 });
 
+elements.board.addEventListener("letter-select", (event) => {
+  const letter = event.detail?.letter;
+  if (typeof letter !== "string") {
+    return;
+  }
+
+  appendLetterToWordInput(letter);
+});
+
 elements.newRandomButton.addEventListener("click", async () => {
   await startRandomSession();
+});
+
+elements.deleteLetterButton.addEventListener("click", () => {
+  deleteLastLetterFromWordInput();
 });
 
 elements.shuffleLettersButton.addEventListener("click", () => {
@@ -505,15 +537,13 @@ document.addEventListener("keydown", (event) => {
 
   if (LETTER_KEY_PATTERN.test(event.key)) {
     event.preventDefault();
-    elements.wordInput.value += event.key.toLowerCase();
-    syncWordInputCenterLetterState();
+    appendLetterToWordInput(event.key);
     return;
   }
 
   if (event.key === "Backspace") {
     event.preventDefault();
-    elements.wordInput.value = elements.wordInput.value.slice(0, -1);
-    syncWordInputCenterLetterState();
+    deleteLastLetterFromWordInput();
     return;
   }
 
