@@ -165,3 +165,50 @@ test("openDb repairs broken schema when required stores are missing", { concurre
   const snapshot = fake.inspectDatabase(DB_NAME);
   assert.deepEqual(snapshot.stores, ["app_meta", "puzzles", "sessions"]);
 });
+
+test("openDb tolerates pre-existing higher db version", { concurrency: false }, async (t) => {
+  const fake = installFakeIndexedDb(t);
+
+  fake.seedDatabase(DB_NAME, 7, {
+    sessions: {
+      keyPath: "sessionId",
+      indexes: [
+        { name: "byUpdatedAt", keyPath: "updatedAt" },
+        { name: "byStatus", keyPath: "status" },
+        { name: "byPuzzleId", keyPath: "puzzleId" }
+      ],
+      records: [
+        {
+          sessionId: "higher-version-session",
+          puzzleId: "2026-02-10",
+          source: "daily",
+          seed: null,
+          createdAt: "2026-02-10T10:00:00.000Z",
+          updatedAt: "2026-02-10T10:00:00.000Z",
+          foundWords: ["acre"],
+          score: 1,
+          rankKey: "beginner",
+          hintUsage: { viewCount: 0 },
+          status: "active"
+        }
+      ]
+    },
+    puzzles: {
+      keyPath: "id",
+      indexes: [],
+      records: []
+    },
+    app_meta: {
+      keyPath: "key",
+      indexes: [],
+      records: []
+    }
+  });
+
+  const db = await openDb();
+  assert.equal(db.version, 7);
+
+  const session = await loadSessionById("higher-version-session");
+  assert.equal(session.sessionId, "higher-version-session");
+  assert.equal(session.score, 1);
+});

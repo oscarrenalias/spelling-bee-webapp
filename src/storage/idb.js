@@ -67,6 +67,44 @@ function hasRequiredStores(db) {
   return REQUIRED_STORES.every((name) => db.objectStoreNames.contains(name));
 }
 
+function isVersionError(error) {
+  if (!error) {
+    return false;
+  }
+
+  return error.name === "VersionError" || error.message === "VersionError";
+}
+
+function validateSchemaOrRepair(db, { repairAttempted }, resolve, reject) {
+  if (hasRequiredStores(db)) {
+    resolve(db);
+    return;
+  }
+
+  if (repairAttempted) {
+    reject(new Error("IndexedDB schema is missing required object stores"));
+    return;
+  }
+
+  db.close();
+  openDbAtVersion(db.version + 1, { repairAttempted: true })
+    .then(resolve)
+    .catch(reject);
+}
+
+function openDbAtCurrentVersion(options = {}) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME);
+
+    request.onsuccess = () => {
+      const db = request.result;
+      validateSchemaOrRepair(db, options, resolve, reject);
+    };
+
+    request.onerror = () => reject(request.error ?? new Error("Failed to open IndexedDB"));
+  });
+}
+
 function openDbAtVersion(targetVersion, { repairAttempted = false } = {}) {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, targetVersion);
@@ -80,23 +118,19 @@ function openDbAtVersion(targetVersion, { repairAttempted = false } = {}) {
 
     request.onsuccess = () => {
       const db = request.result;
-
-      if (hasRequiredStores(db)) {
-        resolve(db);
-        return;
-      }
-
-      if (repairAttempted) {
-        reject(new Error("IndexedDB schema is missing required object stores"));
-        return;
-      }
-
-      db.close();
-      openDbAtVersion(db.version + 1, { repairAttempted: true })
-        .then(resolve)
-        .catch(reject);
+      validateSchemaOrRepair(db, { repairAttempted }, resolve, reject);
     };
-    request.onerror = () => reject(request.error ?? new Error("Failed to open IndexedDB"));
+
+    request.onerror = () => {
+      if (!repairAttempted && isVersionError(request.error)) {
+        openDbAtCurrentVersion({ repairAttempted })
+          .then(resolve)
+          .catch(reject);
+        return;
+      }
+
+      reject(request.error ?? new Error("Failed to open IndexedDB"));
+    };
   });
 }
 

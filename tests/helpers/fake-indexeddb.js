@@ -191,7 +191,7 @@ export function createFakeIndexedDb() {
 
       queueMicrotask(() => {
         let internalDb = dbs.get(name);
-        const requestedVersion = version ?? 1;
+        const requestedVersion = version ?? (internalDb ? internalDb.version : 1);
         const oldVersion = internalDb ? internalDb.version : 0;
 
         if (!internalDb) {
