@@ -22,6 +22,7 @@ const elements = {
   feedback: document.getElementById("feedback"),
   seedDisplay: document.getElementById("seed-display"),
   score: document.getElementById("score"),
+  puzzleDisplay: document.getElementById("puzzle-display"),
   rank: document.getElementById("rank"),
   rankProgress: document.getElementById("rank-progress"),
   rankTrack: document.getElementById("rank-track"),
@@ -35,6 +36,7 @@ const elements = {
   sessions: document.getElementById("sessions"),
   sessionPanel: document.querySelector(".session-panel"),
   openSessionsButton: document.getElementById("open-sessions"),
+  goToTodayButton: document.getElementById("go-to-today"),
   closeSessionsButton: document.getElementById("close-sessions"),
   sessionsBackdrop: document.getElementById("sessions-backdrop"),
   toggleSeedControlsButton: document.getElementById("toggle-seed-controls"),
@@ -337,9 +339,12 @@ function handleWordInputChanged(clearErrorFeedback = true) {
 }
 
 function render(state) {
+  const todayPuzzleId = getTodayPuzzleId();
+  elements.goToTodayButton.hidden = !todayPuzzleId || todayPuzzleId === state.puzzle.id;
   syncBoardLetters(state);
   elements.board.setLetters(state.puzzle.centerLetter, runtime.boardOuterLetters);
   elements.score.textContent = String(state.score);
+  elements.puzzleDisplay.textContent = `Puzzle: ${state.puzzle.date ?? state.puzzle.id}`;
   renderRankTrack(state);
   elements.foundCount.textContent = String(state.foundWords.length);
   const feedbackText = runtime.liveDuplicateWord ? "Word already found." : state.feedback;
@@ -436,6 +441,20 @@ function hydrateStateFromSession(session) {
   return createInitialState(puzzle, session);
 }
 
+function getTodayPuzzleId() {
+  if (!runtime.puzzles.length) {
+    return null;
+  }
+
+  return getDailyPuzzle(runtime.puzzles).id;
+}
+
+function findLatestSessionByPuzzleId(puzzleId) {
+  return [...runtime.sessionsCache]
+    .filter((session) => session.puzzleId === puzzleId)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
+}
+
 async function persistAndRefreshSession(state) {
   const record = await saveSession(state);
   const existingIndex = runtime.sessionsCache.findIndex((item) => item.sessionId === record.sessionId);
@@ -449,13 +468,19 @@ async function persistAndRefreshSession(state) {
   renderSessionsList();
 }
 
-async function activateState(state) {
+async function activateState(state, { persist = true } = {}) {
   runtime.activeState = state;
   runtime.liveDuplicateWord = null;
   runtime.boardOuterLetters = [...state.puzzle.outerLetters];
   runtime.boardPuzzleId = state.puzzle.id;
   render(runtime.activeState);
-  await persistAndRefreshSession(runtime.activeState);
+
+  if (persist) {
+    await persistAndRefreshSession(runtime.activeState);
+    return;
+  }
+
+  renderSessionsList();
 }
 
 async function startDailySession() {
@@ -500,9 +525,7 @@ async function boot() {
     const latest = [...runtime.sessionsCache].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
     const recovered = hydrateStateFromSession(latest);
     if (recovered) {
-      runtime.activeState = recovered;
-      render(runtime.activeState);
-      renderSessionsList();
+      await activateState(recovered, { persist: false });
       renderReady();
       return;
     }
@@ -577,6 +600,26 @@ elements.newRandomButton.addEventListener("click", async () => {
   await startRandomSession();
 });
 
+elements.goToTodayButton.addEventListener("click", async () => {
+  const todayPuzzleId = getTodayPuzzleId();
+  if (!todayPuzzleId) {
+    return;
+  }
+
+  const existingTodaySession = findLatestSessionByPuzzleId(todayPuzzleId);
+  if (existingTodaySession) {
+    const hydrated = hydrateStateFromSession(existingTodaySession);
+    if (hydrated) {
+      await activateState(hydrated, { persist: false });
+      setMobileSessionsOpen(false);
+      return;
+    }
+  }
+
+  await startDailySession();
+  setMobileSessionsOpen(false);
+});
+
 elements.openSessionsButton.addEventListener("click", () => {
   setMobileSessionsOpen(true);
 });
@@ -648,9 +691,7 @@ elements.sessions.addEventListener("click", async (event) => {
     return;
   }
 
-  runtime.activeState = hydrated;
-  render(runtime.activeState);
-  renderSessionsList();
+  await activateState(hydrated, { persist: false });
   setMobileSessionsOpen(false);
 });
 

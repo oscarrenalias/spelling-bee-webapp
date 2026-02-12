@@ -51,6 +51,76 @@ async function getWordsForActivePuzzle(page) {
   return words;
 }
 
+async function getActivePuzzleId(page) {
+  const puzzleId = await page.evaluate(async () => {
+    const host = document.querySelector("letter-board");
+    if (!host?.shadowRoot) {
+      return null;
+    }
+
+    const centerNode = host.shadowRoot.querySelector("text[data-slot='center']");
+    const outerNodes = [...host.shadowRoot.querySelectorAll("text[data-slot='0'], text[data-slot='1'], text[data-slot='2'], text[data-slot='3'], text[data-slot='4'], text[data-slot='5']")];
+
+    const centerLetter = centerNode?.textContent?.trim().toLowerCase();
+    const outerLetters = outerNodes.map((node) => node.textContent?.trim().toLowerCase()).filter(Boolean);
+    if (!centerLetter || outerLetters.length !== 6) {
+      return null;
+    }
+
+    const response = await fetch("/data/puzzles-v1.json");
+    const payload = await response.json();
+    const puzzles = Array.isArray(payload) ? payload : payload?.puzzles;
+    if (!Array.isArray(puzzles)) {
+      return null;
+    }
+
+    const sortedOuter = [...outerLetters].sort().join("");
+    const match = puzzles.find(
+      (puzzle) => puzzle.centerLetter === centerLetter && [...puzzle.outerLetters].sort().join("") === sortedOuter
+    );
+    return match?.id ?? null;
+  });
+
+  return puzzleId;
+}
+
+async function getSeedForDifferentPuzzle(page, puzzleId) {
+  const seed = await page.evaluate(async ({ puzzleId }) => {
+    const response = await fetch("/data/puzzles-v1.json");
+    const payload = await response.json();
+    const puzzles = Array.isArray(payload) ? payload : payload?.puzzles;
+    if (!Array.isArray(puzzles) || puzzles.length < 2) {
+      return null;
+    }
+
+    const currentIndex = puzzles.findIndex((puzzle) => puzzle.id === puzzleId);
+    if (currentIndex < 0) {
+      return null;
+    }
+
+    const targetIndex = (currentIndex + 1) % puzzles.length;
+    const hashSeed = (rawSeed) => {
+      let hash = 0;
+      for (let idx = 0; idx < rawSeed.length; idx += 1) {
+        hash = (hash << 5) - hash + rawSeed.charCodeAt(idx);
+        hash |= 0;
+      }
+      return Math.abs(hash);
+    };
+
+    for (let attempt = 0; attempt < 100_000; attempt += 1) {
+      const candidate = `go-to-today-${attempt}`;
+      if (hashSeed(candidate) % puzzles.length === targetIndex) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }, { puzzleId });
+
+  return seed;
+}
+
 test.describe("core ui smoke", () => {
   test("loads game shell and allows keyboard submission", async ({ page }) => {
     await gotoAndWaitForReady(page);
@@ -408,6 +478,39 @@ test.describe("core ui smoke", () => {
     await expect(page.locator("#open-sessions")).toBeHidden();
     await expect(page.locator("#toggle-seed-controls")).toBeHidden();
     await expect(page.locator("#seed-form")).toBeVisible();
+  });
+
+  test("go to today button switches from a non-today puzzle back to today's puzzle", async ({ page, isMobile }) => {
+    await gotoAndWaitForReady(page);
+
+    const todayPuzzleId = await getActivePuzzleId(page);
+    expect(todayPuzzleId).toBeTruthy();
+    await expect(page.locator("#puzzle-display")).toHaveText(`Puzzle: ${todayPuzzleId}`);
+
+    await expect(page.locator("#go-to-today")).toBeHidden();
+
+    const seed = await getSeedForDifferentPuzzle(page, todayPuzzleId);
+    expect(seed).toBeTruthy();
+
+    if (isMobile) {
+      await page.locator("#toggle-seed-controls").click();
+      await expect(page.locator("#seed-form")).toBeVisible();
+    }
+
+    await page.locator("#seed-input").fill(seed);
+    await page.locator("#seed-form button[type='submit']").click();
+
+    const otherPuzzleId = await getActivePuzzleId(page);
+    expect(otherPuzzleId).toBeTruthy();
+    expect(otherPuzzleId).not.toBe(todayPuzzleId);
+    await expect(page.locator("#puzzle-display")).toHaveText(`Puzzle: ${otherPuzzleId}`);
+
+    await expect(page.locator("#go-to-today")).toBeVisible();
+    await page.locator("#go-to-today").click();
+
+    await expect.poll(async () => getActivePuzzleId(page)).toBe(todayPuzzleId);
+    await expect(page.locator("#puzzle-display")).toHaveText(`Puzzle: ${todayPuzzleId}`);
+    await expect(page.locator("#go-to-today")).toBeHidden();
   });
 
   test("board click/tap, delete, and submit controls work", async ({ page }) => {

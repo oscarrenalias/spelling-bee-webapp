@@ -239,6 +239,13 @@ button:active {
   min-height: 1.2em;
 }
 
+.puzzle-display {
+  margin: 0.1rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
 .rank-track {
   list-style: none;
   margin: 1.4rem 0 0;
