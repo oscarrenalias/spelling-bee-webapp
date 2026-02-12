@@ -53,22 +53,7 @@
       </header>
 
       <section class="status-panel">
-        <div class="status-summary">
-          <div class="score-chip">
-            <span class="status-label">Score</span>
-            <strong id="score">0</strong>
-          </div>
-          <div class="rank-summary">
-            <span class="status-label">Rank</span>
-            <strong id="rank">Beginner</strong>
-            <span id="rank-progress" class="rank-progress"></span>
-          </div>
-          <div class="found-summary">
-            <span class="status-label">Words Found</span>
-            <strong id="found-count">0</strong>
-          </div>
-        </div>
-        <p id="puzzle-display" class="puzzle-display">Puzzle: -</p>
+        <p id="rank-name" class="rank-name">Beginner</p>
         <ol id="rank-track" class="rank-track" aria-label="Rank milestones"></ol>
       </section>
 
@@ -112,7 +97,8 @@
 
         <aside class="right-panel">
           <section class="found-panel">
-            <h2>Found Words</h2>
+            <h2 id="found-heading">No words found yet</h2>
+            <p id="puzzle-display" class="puzzle-display">Puzzle: -</p>
             <ul id="found-words"></ul>
           </section>
 

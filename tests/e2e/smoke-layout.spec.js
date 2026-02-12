@@ -251,28 +251,24 @@ test.describe("core ui smoke", () => {
     await expect(page.locator("#toggle-seed-controls")).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("mobile status summary keeps score rank and found on one row", async ({ page, isMobile }) => {
+  test("mobile status panel keeps rank track visible", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Mobile-only assertion");
     await gotoAndWaitForReady(page);
 
-    const rowMetrics = await page.evaluate(() => {
-      const score = document.querySelector(".score-chip");
-      const rank = document.querySelector(".rank-summary");
-      const found = document.querySelector(".found-summary");
-      if (!score || !rank || !found) {
+    const statusMetrics = await page.evaluate(() => {
+      const track = document.getElementById("rank-track");
+      if (!track) {
         return null;
       }
 
-      const scoreTop = score.getBoundingClientRect().top;
-      const rankTop = rank.getBoundingClientRect().top;
-      const foundTop = found.getBoundingClientRect().top;
+      const trackRect = track.getBoundingClientRect();
       return {
-        maxDelta: Math.max(Math.abs(scoreTop - rankTop), Math.abs(scoreTop - foundTop), Math.abs(rankTop - foundTop))
+        hasHeight: trackRect.height > 0
       };
     });
 
-    expect(rowMetrics).not.toBeNull();
-    expect(rowMetrics.maxDelta).toBeLessThan(10);
+    expect(statusMetrics).not.toBeNull();
+    expect(statusMetrics.hasHeight).toBe(true);
   });
 
   test("mobile board actions stay sticky near the bottom", async ({ page, isMobile }) => {
@@ -598,10 +594,14 @@ test.describe("core ui smoke", () => {
 
     const input = page.locator("#word-input");
     const feedback = page.locator("#feedback");
+    const foundHeading = page.locator("#found-heading");
+
+    await expect(foundHeading).toHaveText("No words found yet");
 
     await input.fill(firstWord);
     await page.locator("#submit-word").click();
     await expect(feedback).toContainText("Accepted");
+    await expect(foundHeading).toHaveText("1 Word Found");
 
     await input.fill(firstWord.slice(0, firstWord.length - 1));
     await expect(feedback).not.toHaveText("Word already found.");
@@ -619,6 +619,7 @@ test.describe("core ui smoke", () => {
     await expect(feedback).not.toHaveText("Word already found.");
     await page.locator("#submit-word").click();
     await expect(feedback).toContainText("Accepted");
+    await expect(foundHeading).toHaveText("2 Words Found");
   });
 
   test("submit error feedback clears when input is edited to empty", async ({ page }) => {

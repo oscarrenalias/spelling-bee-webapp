@@ -8,7 +8,7 @@ template.innerHTML = `
     }
 
     .wrap {
-      max-width: 410px;
+      max-width: 520px;
       margin: 0 auto;
     }
 
@@ -50,7 +50,7 @@ template.innerHTML = `
 
     @media (max-width: 560px) {
       .wrap {
-        max-width: 320px;
+        max-width: 380px;
       }
 
       .letter {

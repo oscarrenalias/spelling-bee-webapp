@@ -197,50 +197,25 @@ button:active {
 
 .status-panel {
   display: grid;
-  gap: 0.9rem;
-  padding: 0.9rem 1rem 1.1rem;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.65rem;
+  row-gap: 0;
+  padding: 0.5rem 0.8rem 0.55rem;
   margin-bottom: 1rem;
   background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, #00111e 12%), var(--panel));
 }
 
-.status-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  align-items: start;
-}
-
-.score-chip,
-.rank-summary,
-.found-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.status-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
+.rank-name {
+  margin: 0;
+  font-size: 0.92rem;
   font-weight: 700;
-}
-
-.score-chip strong,
-.rank-summary strong,
-.found-summary strong {
-  font-size: 1.45rem;
-  line-height: 1.1;
-}
-
-.rank-progress {
-  color: var(--muted);
-  font-size: 0.88rem;
-  min-height: 1.2em;
+  color: var(--ink);
+  min-width: 3.2rem;
 }
 
 .puzzle-display {
-  margin: 0.1rem 0 0;
+  margin: 0.1rem 0 0.55rem;
   color: var(--muted);
   font-size: 0.88rem;
   font-weight: 600;
@@ -248,8 +223,8 @@ button:active {
 
 .rank-track {
   list-style: none;
-  margin: 1.4rem 0 0;
-  padding: 0 0.2rem 1.2rem;
+  margin: 0;
+  padding: 0 0.15rem 0.35rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -302,22 +277,12 @@ button:active {
 }
 
 .rank-marker.is-current {
-  width: 3rem;
-  height: 3rem;
+  width: 2.2rem;
+  height: 2.2rem;
   background: color-mix(in srgb, var(--accent) 88%, #ffe06a 12%);
   border-color: color-mix(in srgb, var(--accent-border) 85%, #644b00 15%);
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   transform: translateY(-0.05rem);
-}
-
-.rank-current-label {
-  position: absolute;
-  bottom: calc(100% + 0.45rem);
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.92rem;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .rank-threshold-label {
@@ -346,7 +311,7 @@ button:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 410px;
+  max-width: 520px;
   margin: 0 auto;
 }
 
@@ -625,30 +590,15 @@ td {
     grid-template-columns: 1fr;
   }
 
-  .status-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .rank-summary {
-    grid-column: auto;
-  }
-
   .status-panel {
-    padding: 0.75rem 0.8rem 0.85rem;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.55rem;
+    padding: 0.5rem 0.65rem 0.55rem;
   }
 
-  .score-chip strong,
-  .rank-summary strong,
-  .found-summary strong {
-    font-size: 1.28rem;
-  }
-
-  .rank-progress {
-    font-size: 0.8rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .rank-name {
+    font-size: 0.84rem;
+    min-width: 2.9rem;
   }
 
   .open-sessions-button,
@@ -726,25 +676,18 @@ td {
 
 @media (max-width: 560px) {
   .board-stack {
-    max-width: 320px;
+    max-width: 380px;
   }
 
   .status-panel {
-    padding: 0.65rem 0.7rem 0.75rem;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.45rem;
+    padding: 0.46rem 0.55rem 0.5rem;
   }
 
-  .status-label {
-    font-size: 0.69rem;
-  }
-
-  .score-chip strong,
-  .rank-summary strong,
-  .found-summary strong {
-    font-size: 1.12rem;
-  }
-
-  .rank-progress {
-    font-size: 0.75rem;
+  .rank-name {
+    font-size: 0.78rem;
+    min-width: 2.6rem;
   }
 
   .board-actions {
@@ -760,17 +703,13 @@ td {
 
   .rank-track {
     gap: 0.35rem;
-    margin-top: 1.1rem;
+    margin-top: 0;
     padding: 0;
   }
 
   .rank-marker.is-current {
-    width: 2.5rem;
-    height: 2.5rem;
-    font-size: 1.2rem;
-  }
-
-  .rank-current-label {
-    font-size: 0.84rem;
+    width: 1.95rem;
+    height: 1.95rem;
+    font-size: 0.95rem;
   }
 }

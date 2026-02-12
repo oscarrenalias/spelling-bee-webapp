@@ -21,12 +21,10 @@ const elements = {
   wordInputHighlight: document.getElementById("word-input-highlight"),
   feedback: document.getElementById("feedback"),
   seedDisplay: document.getElementById("seed-display"),
-  score: document.getElementById("score"),
   puzzleDisplay: document.getElementById("puzzle-display"),
-  rank: document.getElementById("rank"),
-  rankProgress: document.getElementById("rank-progress"),
+  rankName: document.getElementById("rank-name"),
   rankTrack: document.getElementById("rank-track"),
-  foundCount: document.getElementById("found-count"),
+  foundHeading: document.getElementById("found-heading"),
   foundWords: document.getElementById("found-words"),
   remainingPoints: document.getElementById("remaining-points"),
   remainingCount: document.getElementById("remaining-count"),
@@ -95,20 +93,11 @@ function getOrderedRanks(rankThresholds) {
 function renderRankTrack(state) {
   const orderedRanks = getOrderedRanks(state.puzzle.rankThresholds);
   const currentRankIndex = orderedRanks.findIndex((rank) => rank.rankKey === state.rankKey);
-  const nextRank = orderedRanks.find((rank) => rank.threshold > state.score);
   const currentRank = orderedRanks[currentRankIndex] ?? orderedRanks[0];
   const previousCurrentMarker = elements.rankTrack.querySelector(".rank-marker.is-current");
   const previousCurrentRect = previousCurrentMarker?.getBoundingClientRect();
   const previousSnapshot = runtime.rankTrackSnapshot;
-
-  elements.rank.textContent = toRankLabel(state.rankKey);
-
-  if (nextRank) {
-    const pointsToNext = nextRank.threshold - state.score;
-    elements.rankProgress.textContent = `${pointsToNext} points to ${nextRank.label}`;
-  } else {
-    elements.rankProgress.textContent = "Top rank reached";
-  }
+  elements.rankName.textContent = currentRank.label;
 
   elements.rankTrack.innerHTML = "";
   for (const [index, rank] of orderedRanks.entries()) {
@@ -134,13 +123,6 @@ function renderRankTrack(state) {
       item.classList.add("is-past");
     } else if (index === currentRankIndex) {
       item.classList.add("is-current");
-    }
-
-    if (currentRank && rank.rankKey === currentRank.rankKey) {
-      const label = document.createElement("span");
-      label.className = "rank-current-label";
-      label.textContent = currentRank.label;
-      item.append(label);
     }
 
     item.append(marker);
@@ -186,6 +168,18 @@ function renderRankTrack(state) {
     rankIndex: currentRankIndex,
     score: state.score
   };
+}
+
+function formatFoundHeading(foundWordsCount) {
+  if (foundWordsCount <= 0) {
+    return "No words found yet";
+  }
+
+  if (foundWordsCount === 1) {
+    return "1 Word Found";
+  }
+
+  return `${foundWordsCount} Words Found`;
 }
 
 function renderInitLoading(message) {
@@ -343,10 +337,9 @@ function render(state) {
   elements.goToTodayButton.hidden = !todayPuzzleId || todayPuzzleId === state.puzzle.id;
   syncBoardLetters(state);
   elements.board.setLetters(state.puzzle.centerLetter, runtime.boardOuterLetters);
-  elements.score.textContent = String(state.score);
   elements.puzzleDisplay.textContent = `Puzzle: ${state.puzzle.date ?? state.puzzle.id}`;
+  elements.foundHeading.textContent = formatFoundHeading(state.foundWords.length);
   renderRankTrack(state);
-  elements.foundCount.textContent = String(state.foundWords.length);
   const feedbackText = runtime.liveDuplicateWord ? "Word already found." : state.feedback;
   elements.feedback.textContent = feedbackText;
   const feedbackType = runtime.liveDuplicateWord ? "error" : (state.feedbackType ?? "idle");
