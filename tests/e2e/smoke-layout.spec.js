@@ -532,6 +532,31 @@ test.describe("core ui smoke", () => {
     await expect(page.locator("#feedback")).not.toHaveText("");
   });
 
+  test("first letter input does not shift the board vertically", async ({ page }) => {
+    await gotoAndWaitForReady(page);
+
+    const beforeTop = await page.evaluate(() => {
+      const board = document.querySelector("letter-board");
+      if (!(board instanceof HTMLElement)) {
+        return null;
+      }
+      return board.getBoundingClientRect().top;
+    });
+    expect(beforeTop).not.toBeNull();
+
+    await appendCenterLetter(page, 1);
+
+    const afterTop = await page.evaluate(() => {
+      const board = document.querySelector("letter-board");
+      if (!(board instanceof HTMLElement)) {
+        return null;
+      }
+      return board.getBoundingClientRect().top;
+    });
+    expect(afterTop).not.toBeNull();
+    expect(Math.abs(afterTop - beforeTop)).toBeLessThan(1);
+  });
+
   test("board letters are rendered visibly", async ({ page }) => {
     await gotoAndWaitForReady(page);
 
